@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>像素地图编辑器 · 点选生成数组</title>
+<style>
+:root { color-scheme: dark; --bg:#0e111b; --panel:#191f2d; --panel2:#232b3b; --line:#353e52; --text:#edf2ff; --muted:#aab6d0; --blue:#89afff; --gold:#f5c678; --tile:39px;}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 75% -20%,#263755 0,#101522 42%,var(--bg) 78%);color:var(--text);font:14px/1.5 system-ui,-apple-system,"Microsoft YaHei",sans-serif}
+header{max-width:1500px;margin:0 auto;padding:24px 24px 12px}h1{margin:0;font-size:25px;letter-spacing:.02em}header p{margin:5px 0 0;color:var(--muted)}
+.shell{max-width:1500px;margin:auto;padding:8px 24px 28px;display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:16px;align-items:start}
+.panel{background:#191f2df0;border:1px solid var(--line);border-radius:15px;padding:16px;box-shadow:0 10px 35px #0003;min-width:0}
+.panel h2{font-size:15px;margin:0 0 12px;display:flex;align-items:center;gap:8px}.panel h2 .sub{font-size:12px;font-weight:400;color:var(--muted)}
+.sidebar{display:grid;gap:16px}.group{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:11px 0}.group:last-child{margin-bottom:0}
+button,.filebutton,select,input[type=number]{font:inherit}button,.filebutton{background:var(--panel2);border:1px solid #46516a;border-radius:9px;color:var(--text);padding:8px 11px;cursor:pointer;transition:background .12s,border .12s}
+button:hover,.filebutton:hover{background:#35415a;border-color:var(--blue)}button:focus-visible,.filebutton:focus-visible,.cell:focus-visible{outline:2px solid #afc8ff;outline-offset:2px}button.primary{background:#456bb9;border-color:#789dec;font-weight:650}button.primary:hover{background:#557ccb}
+button.active{background:#324b7b;border-color:#a2c1ff}button:disabled{opacity:.35;cursor:not-allowed}
+input[type=number]{width:66px;background:#111725;border:1px solid #47516a;color:var(--text);border-radius:7px;padding:7px}
+input[type=range]{accent-color:#88afff}label{color:var(--muted)}.micro{color:var(--muted);font-size:12px}
+.palette{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;max-height:520px;overflow:auto;padding:3px}
+.sprite{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 1px 5px;min-width:0}.sprite img{width:34px;height:34px;image-rendering:pixelated;object-fit:contain}.sprite span{font-size:12px;color:var(--muted);white-space:nowrap}.sprite.active span{color:#fff}.sprite.active{box-shadow:inset 0 0 0 1px #a2c1ff}
+.filebutton{display:inline-block}.filebutton input{display:none}.hint{margin:8px 0 0;color:var(--muted);font-size:12px}.divider{height:1px;background:var(--line);margin:14px 0}
+.work{display:grid;gap:16px;min-width:0}.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.toolbar label{display:flex;align-items:center;gap:6px}.spacer{flex:1}
+.stage{overflow:auto;background:#101521;border:1px solid #343e51;border-radius:12px;padding:16px;min-height:340px;max-height:74vh}
+.grid{--cols:11;display:grid;grid-template-columns:repeat(var(--cols),var(--tile));width:max-content;position:relative;user-select:none;touch-action:pan-x pan-y;isolation:isolate;border:2px solid #8a9ab0;box-shadow:0 0 0 5px #080c14,0 12px 28px #0008;background:#282a2d}
+.ref{position:absolute;inset:0;background-size:100% 100%;background-repeat:no-repeat;pointer-events:none;z-index:0;display:none}.grid.hasref .ref{display:block}
+.cell{width:var(--tile);height:var(--tile);padding:0;border:1px solid #ffffff16;border-radius:0;background:#303238;position:relative;z-index:1;display:grid;place-items:center;cursor:crosshair;touch-action:none;overflow:hidden}.cell:hover{outline:2px solid #c4d5ff;outline-offset:-2px;z-index:2}.cell img{width:100%;height:100%;object-fit:fill;image-rendering:pixelated;pointer-events:none}.cell em{position:absolute;right:1px;bottom:0;background:#070b12ce;color:white;border-radius:3px;font-size:9px;line-height:1.2;font-style:normal;padding:0 2px;pointer-events:none}.grid.hasref .cell.empty{background:transparent}.grid.hasref .cell.empty img{display:none}
+.status{color:var(--muted);font-size:12px;margin-top:10px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+textarea{display:block;width:100%;min-height:205px;resize:vertical;background:#0e1420;color:#def2fd;border:1px solid #46516a;border-radius:10px;padding:13px 14px;line-height:1.55;font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre;tab-size:2}
+.toggle{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}input[type=checkbox]{accent-color:#89afff}
+#toast{position:fixed;right:18px;bottom:18px;max-width:min(440px,calc(100vw - 36px));padding:11px 16px;background:#2e456e;color:white;border:1px solid #8cb1f8;border-radius:10px;box-shadow:0 8px 35px #0007;opacity:0;transform:translateY(15px);pointer-events:none;transition:.2s;z-index:10}#toast.show{opacity:1;transform:translateY(0)}
+@media(max-width:900px){.shell{grid-template-columns:1fr}.sidebar{grid-template-columns:repeat(2,minmax(0,1fr))}.sidebar .help{grid-column:1/-1}.stage{max-height:65vh}}
+@media(max-width:610px){header{padding:16px 12px 8px}.shell{padding:6px 10px 20px}.sidebar{grid-template-columns:1fr}.sidebar .help{grid-column:auto}.panel{padding:12px}.palette{grid-template-columns:repeat(6,minmax(0,1fr))}.stage{padding:8px}.toolbar{gap:6px}}
+</style></head>
+<body>
+<header><h1>🧩 像素地图编辑器</h1><p>把本 HTML 和 0.png、1.png、71.png 等放在同一文件夹，打开即读取素材；点格子放置后复制二维数组。</p></header>
+<main class="shell">
+<aside class="sidebar">
+ <section class="panel"><h2>🗂️ 资源库 <span class="sub" id="assetCount"></span></h2><div id="palette" class="palette"></div>
+ <div class="group"><label>扫描到 ID <input id="maxAssetId" type="number" min="0" max="9999" value="200" style="width:82px"></label><button id="scanAssets">重新扫描本目录 PNG</button></div>
+ <div class="group"><label class="filebutton">＋ 手动导入 PNG（可选）<input id="files" type="file" accept="image/png,image/*" multiple></label></div>
+ <p class="hint" id="scanInfo">启动后自动尝试读取与 HTML 同一文件夹内的 0.png～200.png；只显示确实存在的文件。新素材 ID 超过 200 时，调高扫描上限再点「重新扫描」。文件名数字即数组 ID，文件不会上传到任何服务器。</p></section>
+ <section class="panel"><h2>⚙️ 地图设置</h2><div class="group"><label>列数 <input id="cols" type="number" min="1" max="80" value="11"></label><label>行数 <input id="rows" type="number" min="1" max="80" value="11"></label><button id="resize">调整大小</button></div>
+ <div class="group"><label>格子大小 <input id="size" type="range" min="24" max="65" value="39"></label><span id="sizeLabel">39 px</span></div>
+ <div class="group"><button id="blank">清空地图</button></div>
+ <div class="divider"></div><label class="toggle"><input id="showIds" type="checkbox"> 显示每格 ID</label>
+ </section>
+ <section class="panel help"><h2>🖼️ 对照原图（可选）</h2><div class="group"><label class="filebutton">上传地图截图<input id="referenceFile" type="file" accept="image/*"></label><button id="removeReference">关闭原图</button></div>
+ <div class="group"><label class="toggle"><input id="showReference" type="checkbox"> 显示底图</label><label>底图透明度 <input id="referenceOpacity" type="range" min="10" max="100" value="75"></label></div><p class="hint">空格会透出底图，方便你一格格照着临摹；导出的数组不包含底图。</p>
+ </section>
+ <section class="panel help"><h2>🖱️ 操作方法</h2><p class="hint" style="font-size:13px">左键放置 · 按住拖动连续绘制 · 右键擦除（写入 0）· Alt + 左键吸取已有格子的 ID · Shift + 左键填充相邻同 ID 区域 · Ctrl / ⌘ + Z 撤销。</p></section>
+</aside>
+<div class="work">
+ <section class="panel"><h2>🗺️ 地图画布 <span class="sub" id="dimensions">11 × 11</span></h2>
+ <div class="toolbar"><span>当前笔刷：</span><b id="selectedName">0.png</b><img id="selectedImg" width="32" height="32" style="image-rendering:pixelated" alt="当前素材"><button id="eraser">橡皮擦 (0)</button><div class="spacer"></div><button id="undo">↶ 撤销</button><button id="redo">↷ 重做</button></div>
+ <div class="divider"></div><div class="stage"><div id="grid" class="grid"><div id="ref" class="ref"></div></div></div>
+ <div class="status"><span id="hoverInfo">选择素材，点击格子开始绘制</span><span id="paintCount">已放置：0 格</span></div></section>
+ <section class="panel"><h2>📋 复制结果 <span class="sub">可直接粘进 JS 或 Python</span></h2>
+ <div class="toolbar" style="margin-bottom:10px"><label class="toggle"><input id="variable" type="checkbox"> 加上 const map =</label><button id="copy" class="primary">复制二维数组</button><button id="saveJson">下载 JSON</button><button id="loadBtn">导入数组</button></div>
+ <textarea id="output" spellcheck="false" aria-label="二维数组输出"></textarea>
+ <p class="hint">输出框会实时更新。想导入以前写过的地图，粘贴二维数组或 <code>const map = [...]</code> 到这里，再点「导入数组」。</p></section>
+</div></main><div id="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+const STORAGE = 'pixel-map-editor-v3';
+const $ = id => document.getElementById(id);
+const imgs = {};
+let scanToken = 0;
+let cols=11,rows=11,map=Array.from({length:11},()=>Array(11).fill(0)),brush=0;
+let history=[],future=[],stroke=null,pointerMode='',refUrl='',statusTimeout;
+const sortedIds = () => Object.keys(imgs).map(Number).sort((a,b)=>a-b);
+const validNumber = n => Number.isInteger(n)&&n>=0&&n<=999999;
+function note(s){const el=$('toast');el.textContent=s;el.classList.add('show');clearTimeout(statusTimeout);statusTimeout=setTimeout(()=>el.classList.remove('show'),2400)}
+function snapshot(){return {cols,rows,map:map.map(row=>row.slice())}}
+function restore(state){cols=state.cols;rows=state.rows;map=state.map.map(row=>row.slice());$('cols').value=cols;$('rows').value=rows}
+function same(a,b){return JSON.stringify(a)===JSON.stringify(b)}
+function record(before){if(!same(before,map)){history.push(before);if(history.length>100)history.shift();future=[];save();draw()}}
+function begin(){stroke=snapshot()}
+function finish(){if(stroke){record(stroke);stroke=null}}
+function save(){try{localStorage.setItem(STORAGE,JSON.stringify({cols,rows,map,brush}))}catch(e){}}
+function renderPalette(){const p=$('palette');p.innerHTML='';for(const id of sortedIds()){
+ const b=document.createElement('button');b.type='button';b.className='sprite'+(id===brush?' active':'');b.title=id+'.png';b.setAttribute('aria-label','选择 '+id+'.png');
+ const img=document.createElement('img');img.src=imgs[id];img.alt='';const s=document.createElement('span');s.textContent=id+'.png';b.append(img,s);b.onclick=()=>select(id);p.append(b)}
+ $('assetCount').textContent='共 '+sortedIds().length+' 种';const selected=imgs[brush]||imgs[0];if(selected)$('selectedImg').src=selected;else $('selectedImg').removeAttribute('src');$('selectedName').textContent=brush+'.png';}
+function select(id){brush=id;renderPalette();save()}
+function format(){return '[\n'+map.map(row=>'  ['+row.join(', ')+'],').join('\n')+'\n]'}
+function renderOutput(){const s=format();$('output').value=($('variable').checked?'const map = ':'')+s+($('variable').checked?';':'');$('dimensions').textContent=cols+' × '+rows;let filled=0;map.forEach(row=>row.forEach(id=>{if(id!==0)filled++}));$('paintCount').textContent='已放置：'+filled+' 格'}
+function draw(){const grid=$('grid');grid.style.setProperty('--cols',cols);grid.replaceChildren($('ref'));
+ const showIds=$('showIds').checked;
+ for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+  const id=map[r][c],b=document.createElement('button');b.type='button';b.className='cell'+(id===0?' empty':'');b.dataset.r=r;b.dataset.c=c;b.title='第 '+(r+1)+' 行，第 '+(c+1)+' 列：'+id+'.png';b.setAttribute('aria-label',b.title);
+  if(imgs[id]){const image=document.createElement('img');image.src=imgs[id];image.alt='';image.draggable=false;b.append(image)}
+  else {b.style.background=id?'#68404d':'';b.textContent=id||''}
+  if(showIds){const em=document.createElement('em');em.textContent=id;b.append(em)}grid.append(b)
+ }renderOutput();updateHistoryButtons();}
+function updateHistoryButtons(){$('undo').disabled=!history.length;$('redo').disabled=!future.length}
+function setTile(r,c,id){if(r<0||c<0||r>=rows||c>=cols||map[r][c]===id)return;map[r][c]=id;
+ const el=$('grid').querySelector('[data-r="'+r+'"][data-c="'+c+'"]');if(el){el.classList.toggle('empty',id===0);el.title='第 '+(r+1)+' 行，第 '+(c+1)+' 列：'+id+'.png';el.setAttribute('aria-label',el.title);el.replaceChildren();el.style.background='';
+ if(imgs[id]){const im=document.createElement('img');im.src=imgs[id];im.alt='';im.draggable=false;el.append(im)}else{el.style.background=id?'#68404d':'';el.textContent=id||''}
+ if($('showIds').checked){const em=document.createElement('em');em.textContent=id;el.append(em)}}renderOutput()}
+function flood(r,c,id){const old=map[r][c];if(old===id)return;const todo=[[r,c]],seen=new Set();while(todo.length){const [y,x]=todo.pop(),key=y*cols+x;if(y<0||x<0||y>=rows||x>=cols||seen.has(key)||map[y][x]!==old)continue;seen.add(key);setTile(y,x,id);todo.push([y+1,x],[y-1,x],[y,x+1],[y,x-1])}}
+const grid=$('grid');grid.addEventListener('contextmenu',e=>e.preventDefault());
+grid.addEventListener('pointerdown',e=>{
+ const cell=e.target.closest('.cell');if(!cell)return;const r=+cell.dataset.r,c=+cell.dataset.c;
+ if(e.altKey){select(map[r][c]);note('吸取 '+brush+'.png');e.preventDefault();return}
+ if(e.button!==0&&e.button!==2)return;
+ e.preventDefault();begin();pointerMode=e.button===2?'erase':'paint';if(e.shiftKey&&pointerMode==='paint'){flood(r,c,brush);finish();pointerMode='';return}
+ setTile(r,c,pointerMode==='erase'?0:brush);try{grid.setPointerCapture(e.pointerId)}catch(err){};
+});
+grid.addEventListener('pointermove',e=>{
+ const nearest=document.elementFromPoint(e.clientX,e.clientY),cell=nearest&&nearest.closest('.cell');if(cell&&grid.contains(cell)){
+ const r=+cell.dataset.r,c=+cell.dataset.c;$('hoverInfo').textContent='行 '+(r+1)+' · 列 '+(c+1)+' · ID '+map[r][c];
+ if(pointerMode)setTile(r,c,pointerMode==='erase'?0:brush)}
+});
+for(const event of ['pointerup','pointercancel','lostpointercapture'])grid.addEventListener(event,()=>{pointerMode='';finish()});
+$('eraser').onclick=()=>select(0);
+$('undo').onclick=()=>{if(!history.length)return;future.push(snapshot());restore(history.pop());draw();save()};
+$('redo').onclick=()=>{if(!future.length)return;history.push(snapshot());restore(future.pop());draw();save()};
+$('resize').onclick=()=>{const w=Number($('cols').value),h=Number($('rows').value);if(!Number.isInteger(w)||!Number.isInteger(h)||w<1||h<1||w>80||h>80)return note('行列数须为 1～80');const before=snapshot();
+ map=Array.from({length:h},(_,r)=>Array.from({length:w},(_,c)=>map[r]?.[c]??0));cols=w;rows=h;record(before);draw();save();note('地图已调整为 '+w+' × '+h)};
+$('blank').onclick=()=>{if(!confirm('确定清空整张地图？可以通过撤销找回。'))return;const before=snapshot();map=map.map(row=>row.map(()=>0));record(before);note('已清空地图')};
+$('showIds').onchange=draw;$('size').oninput=e=>{grid.style.setProperty('--tile',e.target.value+'px');$('sizeLabel').textContent=e.target.value+' px'};
+$('variable').onchange=renderOutput;
+$('files').onchange=async e=>{let n=0;for(const file of e.target.files){const m=file.name.match(/^(\d+)\.(png|webp|jpe?g|gif)$/i);if(!m)continue;const id=Number(m[1]);if(!validNumber(id))continue;imgs[id]=await new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>resolve(null);reader.readAsDataURL(file)});if(imgs[id])n++}renderPalette();draw();note('成功载入 '+n+' 个素材；请用数字文件名，例如 71.png');e.target.value=''};
+// file:// 页面不能直接列出目录；按数字文件名探测相对路径。
+// 只读取同目录的 PNG，无服务器、无上传，也无需内嵌截图素材。
+async function scanLocalPngs(){
+ const max=Number($('maxAssetId').value);
+ if(!Number.isInteger(max)||max<0||max>9999){note('扫描上限须为 0～9999');return}
+ const token=++scanToken;
+ for(const id of Object.keys(imgs)) delete imgs[id];
+ renderPalette();draw();
+ $('scanAssets').disabled=true;
+ $('scanInfo').textContent='正在读取本目录中的数字命名 PNG（0.png～'+max+'.png）……';
+ let next=0,found=0;
+ async function worker(){
+  while(next<=max&&token===scanToken){
+   const id=next++,url=new URL(id+'.png',document.baseURI).href;
+   const exists=await new Promise(resolve=>{
+    const im=new Image();im.onload=()=>resolve(true);im.onerror=()=>resolve(false);im.src=url;
+   });
+   if(token!==scanToken)return;
+   if(exists){imgs[id]=url;found++}
+  }
+ }
+ await Promise.all(Array.from({length:Math.min(20,max+1)},()=>worker()));
+ if(token!==scanToken)return;
+ renderPalette();draw();$('scanAssets').disabled=false;
+ $('scanInfo').textContent=found
+  ?'已从本目录读取 '+found+' 张 PNG。每张数字文件名就是数组 ID；添加新文件后点「重新扫描」。'
+  :'未找到数字命名的 PNG。请把 HTML 和 0.png、1.png 等放在同一个文件夹后重新扫描。';
+ note('已读取本目录 '+found+' 张 PNG');
+}
+$('scanAssets').onclick=scanLocalPngs;
+
+function showRef(){const visible=$('showReference').checked&&!!refUrl;grid.classList.toggle('hasref',visible);$('ref').style.backgroundImage=visible?'url("'+refUrl+'")':'';$('ref').style.opacity=Number($('referenceOpacity').value)/100}
+$('referenceFile').onchange=e=>{const f=e.target.files?.[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{refUrl=reader.result;$('showReference').checked=true;showRef();note('参考图已加载')};reader.readAsDataURL(f)};
+
+$('removeReference').onclick=()=>{$('showReference').checked=false;showRef()};
+$('showReference').onchange=showRef;$('referenceOpacity').oninput=showRef;
+async function copy(text){try{await navigator.clipboard.writeText(text);note('数组已复制到剪贴板')}catch(e){$('output').focus();$('output').select();try{document.execCommand('copy');note('数组已复制')}catch(e2){note('请手动选中输出框按 Ctrl+C 复制')}}}
+$('copy').onclick=()=>copy($('output').value);
+$('saveJson').onclick=()=>{const blob=new Blob([JSON.stringify(map,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='map-'+cols+'x'+rows+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)};
+$('loadBtn').onclick=()=>{const raw=$('output').value.trim();let parsed;try{
+ const text=raw.replace(/^\s*(?:const|let|var)\s+[\w$]+\s*=\s*/, '').replace(/;\s*$/,'').replace(/,\s*([\]\}])/g,'$1');parsed=JSON.parse(text);
+ if(!Array.isArray(parsed)||!parsed.length||!Array.isArray(parsed[0])||!parsed[0].length)throw Error('不是二维数组');const w=parsed[0].length;
+ if(w>80||parsed.length>80||!parsed.every(row=>Array.isArray(row)&&row.length===w&&row.every(validNumber)))throw Error('数组行长度不一致、数字不合法或尺寸超过 80');
+ }catch(e){note('导入失败：'+e.message);return}
+ const before=snapshot();map=parsed;rows=map.length;cols=map[0].length;$('rows').value=rows;$('cols').value=cols;record(before);draw();save();note('导入成功：'+cols+' × '+rows)};
+document.addEventListener('keydown',e=>{const typing=['TEXTAREA','INPUT'].includes(document.activeElement?.tagName);if((e.ctrlKey||e.metaKey)&&!e.altKey){if(e.key.toLowerCase()==='z'&&!typing){e.preventDefault();$('undo').click()}if(e.key.toLowerCase()==='y'&&!typing){e.preventDefault();$('redo').click()}}});
+try{const prior=JSON.parse(localStorage.getItem(STORAGE));if(prior&&Array.isArray(prior.map)&&Number.isInteger(prior.cols)&&Number.isInteger(prior.rows)&&prior.cols>0&&prior.rows>0&&prior.cols<=80&&prior.rows<=80&&prior.map.length===prior.rows&&prior.map.every(row=>Array.isArray(row)&&row.length===prior.cols&&row.every(validNumber))){map=prior.map;cols=prior.cols;rows=prior.rows;brush=validNumber(prior.brush)?prior.brush:0;$('cols').value=cols;$('rows').value=rows}}catch(e){}
+renderPalette();draw();scanLocalPngs();
+</script></body></html>
