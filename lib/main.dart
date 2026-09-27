@@ -1,16 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:tower50/pages/main_game.dart';
+import 'package:tower50/pages/main_game_page.dart';
+import 'package:tower50/pages/settings_page.dart';
+import 'package:tower50/widgets/feature_phone_menu.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'core/platform/exit_app.dart';
+import 'input/key_action.dart';
+import 'input/key_bindings.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (!kIsWeb &&
-      defaultTargetPlatform == TargetPlatform.windows) {
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
     await windowManager.ensureInitialized();
   }
 
@@ -27,6 +30,7 @@ class MyApp extends StatelessWidget {
       title: '',
       theme: ThemeData(
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        fontFamily: 'SourceHanSansCN',
       ),
       home: const MyHomePage(),
     );
@@ -36,129 +40,146 @@ class MyApp extends StatelessWidget {
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
-
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  static const _items = ['开始游戏', '载入进度', '设置','退出'];
-  int _selectedIndex = 0;
+  int selectedMenuIndex = 0;
+  final FocusNode _focusNode = FocusNode();
 
-  void _moveSelection(int delta) {
-    setState(() {
-      // 加 _items.length 再取余，避免负数
-      _selectedIndex = (_selectedIndex + delta + _items.length) % _items.length;
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.requestFocus();
     });
   }
 
-  void _activate() {
-    debugPrint('选择了: [$_selectedIndex]${_items[_selectedIndex]}');
-    if(_items[_selectedIndex]=="开始游戏"){
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => MainGame()),
-      );
-    }
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
 
-    if(_items[_selectedIndex]=="载入进度"){
-      //TODO
-    }
+  static const menuItems = ['开始游戏', '载入进度', '设置', '退出'];
 
-    if(_items[_selectedIndex]=="设置"){
-      //TODO
-    }
+  void _moveUp() {
+    setState(() {
+      //selectedMenuIndex = (selectedMenuIndex - 1 + menuItems.length) % menuItems.length;//列表循环
+      if (selectedMenuIndex > 0) {
+        selectedMenuIndex--; //列表不循环
+      }
+    });
+  }
 
-    if(_items[_selectedIndex]=="退出"){
-      exitApp(context);
+  void _moveDown() {
+    setState(() {
+      //selectedMenuIndex = (selectedMenuIndex + 1) % menuItems.length;//列表循环
+      if (selectedMenuIndex < menuItems.length - 1) {
+        selectedMenuIndex++; //列表不循环
+      }
+    });
+  }
+
+  void _confirm([int? index]) {
+    final targetIndex = index ?? selectedMenuIndex;
+    switch (targetIndex) {
+      case 0:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MainGamePage()),
+        );
+        break;
+
+      case 1:
+        _loadGame();
+        break;
+
+      case 2:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SettingsPage()),
+        );
+        break;
+
+      case 3:
+        exitApp(context);
+        break;
     }
   }
 
   KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
 
-    final key = event.logicalKey;
-    if (key == LogicalKeyboardKey.arrowUp) {
-      _moveSelection(-1);
+    final key = event.physicalKey;
+    final bindings = KeyBindings.instance;
+
+    if (bindings.matches(KeyAction.up, key)) {
+      _moveUp();
       return KeyEventResult.handled;
     }
-    if (key == LogicalKeyboardKey.arrowDown) {
-      _moveSelection(1);
+
+    if (bindings.matches(KeyAction.down, key)) {
+      _moveDown();
       return KeyEventResult.handled;
     }
-    if (key == LogicalKeyboardKey.enter ||
-        key == LogicalKeyboardKey.select ||
-        key == LogicalKeyboardKey.space) {
-      _activate();
+
+    if (bindings.matches(KeyAction.confirm, key)) {
+      _confirm();
       return KeyEventResult.handled;
     }
+
+    if (bindings.matches(KeyAction.back, key)) {
+      _back();
+      return KeyEventResult.handled;
+    }
+
+    if (bindings.matches(KeyAction.menu, key)) {
+      _menu();
+      return KeyEventResult.handled;
+    }
+
     return KeyEventResult.ignored;
+  }
+
+  void _loadGame() {
+    // TODO: 以后实现载入进度
+  }
+
+  void _menu() {
+    // TODO
+  }
+
+  void _back() {
+    // TODO
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text("50层魔塔"),
+        title: const Text('50层魔塔', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.blue,
       ),
       body: Focus(
-        autofocus: true,
+        focusNode: _focusNode,
         onKeyEvent: _onKeyEvent,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (var i = 0; i < _items.length; i++) ...[
-                if (i > 0) const SizedBox(height: 16), // 项与项之间的间距
-                _MenuItem(
-                  label: _items[i],
-                  selected: i == _selectedIndex,
-                  onTap: () {
-                    setState(() => _selectedIndex = i);
-                    _activate();
-                  },
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MenuItem extends StatelessWidget {
-  const _MenuItem({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        // 内边距，让文字不要贴着边框
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: selected ? Colors.red : Colors.grey,
-            width: 2, // 固定宽度，避免选中时布局抖动
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            color: selected ? Colors.red : Colors.black87,
-          ),
+        child: FeaturePhoneMenu(
+          title: '主菜单',
+          items: menuItems,
+          selectedIndex: selectedMenuIndex,
+          onItemSelected: (index) {
+            setState(() {
+              selectedMenuIndex = index;
+            });
+            _confirm(index);
+          },
+          showLeftButton: true,
+          leftButtonText: "选择",
         ),
       ),
     );

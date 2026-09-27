@@ -102,6 +102,15 @@ flutter:
   #       - asset: fonts/TrajanPro.ttf
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
+  fonts:
+    - family: SourceHanSansCN
+      fonts:
+        - asset: assets/fonts/SourceHanSansCN-Regular.otf
+          weight: 400
+        - asset: assets/fonts/SourceHanSansCN-Medium.otf
+          weight: 500
+        - asset: assets/fonts/SourceHanSansCN-Bold.otf
+          weight: 700
   #
   # 有关从软件包依赖中使用字体的详细信息，
   # 请参阅：

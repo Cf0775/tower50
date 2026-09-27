@@ -81,6 +81,12 @@ class _GameBoardState extends State<GameBoard> {
       values.addAll(row);
     }
 
+    // 把我自己的图片也加入需要加载的素材
+    values.add(45);
+    values.add(46);
+    values.add(47);
+    values.add(48);
+
     // 并行加载素材
     await Future.wait(
       values.map(_loadImage),

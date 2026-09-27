@@ -8,14 +8,14 @@ import '../data/static_value.dart';
 import '../utils/debug/screen_debug.dart';
 import '../widgets/game_board.dart';
 
-class MainGame extends StatefulWidget {
-  const MainGame({super.key});
+class MainGamePage extends StatefulWidget {
+  const MainGamePage({super.key});
 
   @override
-  State<MainGame> createState() => _MainGameState();
+  State<MainGamePage> createState() => _MainGamePageState();
 }
 
-class _MainGameState extends State<MainGame> {
+class _MainGamePageState extends State<MainGamePage> {
   // 记录上一次窗口尺寸
   Size? _lastSize;
 

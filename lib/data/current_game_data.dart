@@ -1,3 +1,10 @@
+enum Direction {
+  up,
+  down,
+  left,
+  right,
+}
+
 class CurrentGameData {
   final List<List<List<int>>> _currentMap = [
     // ==================== 第 0 层 ====================
@@ -718,6 +725,8 @@ class CurrentGameData {
   int _currentFloor = 1;//当前楼层数
   int _currentRow = 10;//当前位置第几 Row
   int _currentColumn = 5;//当前位置第几 Column
+  Direction _myDirection = Direction.up;
+
 
   int get currentFloor => _currentFloor;
 
@@ -749,6 +758,12 @@ class CurrentGameData {
 
   List<List<int>> getFloorMap(int floor) {
     return _currentMap[floor];
+  }
+
+  Direction get myDirection => _myDirection;
+
+  set myDirection(Direction value) {
+    _myDirection = value;
   }
 
 
