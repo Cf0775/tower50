@@ -43,6 +43,7 @@ dependencies:
   # 可以使用 CupertinoIcons 类来显示 iOS 风格的图标。
   cupertino_icons: ^1.0.8
   window_manager: ^0.5.2
+  change_app_package_name: ^1.5.0
 
 dev_dependencies:
   flutter_test:

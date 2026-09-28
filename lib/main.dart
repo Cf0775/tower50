@@ -115,6 +115,11 @@ class _MyHomePageState extends State<MyHomePage> {
       return KeyEventResult.ignored;
     }
 
+    debugPrint(
+      '按下物理键: ${event.physicalKey.debugName} '
+          'usbHidUsage=${event.physicalKey.usbHidUsage}',
+    );
+
     final key = event.physicalKey;
     final bindings = KeyBindings.instance;
 
